@@ -43,7 +43,6 @@ const status = $('#status');
 const actions = $('#actions');
 let catalogVersion = 0;
 let albumVersion = 0;
-let nextIndex = null;
 let previousFocus;
 
 function element(tag, className, text) {
@@ -69,27 +68,6 @@ function image(url, alt) {
   img.addEventListener('error', () => { img.src = fallback; }, { once: true });
   return img;
 }
-function playPreview(track) {
-  const url = safeURL(track.preview);
-  if (!url) return;
-  $('#player-title').textContent = track.title || 'Faixa';
-  $('#player-artist').textContent = track.artist?.name || '';
-  $('#audio-error').textContent = '';
-  $('#player').hidden = false;
-  document.body.classList.add('player-open');
-  const audio = $('#audio');
-  audio.src = url;
-  audio.play().catch(() => {
-    $('#audio-error').textContent = 'Não foi possível iniciar a prévia. Tente pelo controle de áudio.';
-  });
-}
-function playButton(track) {
-  const button = element('button', 'btn play-button', '▶');
-  button.type = 'button';
-  button.setAttribute('aria-label', `Ouvir prévia de ${track.title || 'faixa'}`);
-  button.addEventListener('click', () => playPreview(track));
-  return button;
-}
 function trackCard(track, index) {
   const card = element('article', 'track-card col');
   const cover = element('button', 'cover-button');
@@ -105,9 +83,7 @@ function trackCard(track, index) {
   title.title = track.title || '';
   text.append(title, element('p', '', track.artist?.name || 'Artista desconhecido'));
   heading.append(text);
-  if (safeURL(track.preview)) heading.append(playButton(track));
   card.append(cover, heading);
-  if (!safeURL(track.preview)) card.append(element('p', 'no-preview', 'Prévia indisponível'));
   return card;
 }
 function retryButton(action) {
@@ -116,39 +92,33 @@ function retryButton(action) {
   button.addEventListener('click', action);
   return button;
 }
-async function loadCatalog(term = '', append = false) {
+async function loadCatalog(term = '') {
   const version = ++catalogVersion;
-  const offset = append ? nextIndex : 0;
-  if (!append) {
-    grid.replaceChildren();
-    $('#catalog-title').textContent = term ? `Resultados para “${term}”` : 'Em alta na Deezer';
-    $('#section-kicker').textContent = term ? 'SUA BUSCA' : 'NO RADAR';
-    $('#catalog-description').textContent = term ? 'Encontre um som e explore o álbum para continuar a descoberta.' : 'Ranking geral da Deezer, sem filtro de país ou gênero.';
-    $('#show-chart').hidden = !term;
-  }
+  grid.replaceChildren();
   actions.replaceChildren();
-  status.textContent = append ? 'Carregando mais músicas…' : 'Sintonizando a Deezer…';
+  $('#catalog-title').textContent = term ? `Resultados para “${term}”` : 'Em alta na Deezer';
+  $('#section-kicker').textContent = term ? 'SUA BUSCA' : 'NO RADAR';
+  $('#catalog-description').textContent = term
+    ? 'Até 20 resultados. Clique em uma capa para ver o álbum.'
+    : 'Ranking geral da Deezer, sem filtro de país ou gênero.';
+  $('#show-chart').hidden = !term;
+  status.textContent = 'Carregando músicas…';
   grid.setAttribute('aria-busy', 'true');
   try {
-    const result = await requestDeezer(term ? '/search' : '/chart', term ? { q: term, limit: 20, index: offset } : {});
+    const result = term
+      ? await requestDeezer('/search', { q: term, limit: 20 })
+      : await requestDeezer('/chart');
     if (version !== catalogVersion) return;
     const tracks = term ? result.data : result.tracks?.data;
     if (!Array.isArray(tracks)) throw new Error('A Deezer retornou um formato inesperado. Tente novamente.');
-    const start = grid.children.length;
-    grid.append(...tracks.map((track, index) => trackCard(track, start + index)));
-    status.textContent = grid.children.length ? `${grid.children.length} músicas ${term ? 'encontradas' : 'em destaque'}.` : 'Nenhuma música encontrada. Experimente outro nome de música ou artista.';
-    nextIndex = null;
-    if (term && result.next && tracks.length) {
-      nextIndex = Number(offset) + tracks.length;
-      const more = element('button', 'btn btn-outline-secondary secondary', 'Carregar mais músicas ↓');
-      more.type = 'button';
-      more.addEventListener('click', () => loadCatalog(term, true));
-      actions.append(more);
-    }
+    grid.append(...tracks.map(trackCard));
+    status.textContent = tracks.length
+      ? `${tracks.length} músicas ${term ? 'encontradas' : 'em destaque'}.`
+      : 'Nenhuma música encontrada. Experimente outro nome de música ou artista.';
   } catch (error) {
     if (version !== catalogVersion) return;
     status.textContent = error.message;
-    actions.append(retryButton(() => loadCatalog(term, append)));
+    actions.append(retryButton(() => loadCatalog(term)));
   } finally {
     if (version === catalogVersion) grid.setAttribute('aria-busy', 'false');
   }
@@ -190,7 +160,6 @@ async function openAlbum(id) {
     tracks.forEach((track, index) => {
       const row = element('li');
       row.append(element('span', 'rank', String(index + 1).padStart(2, '0')), element('span', 'song-name', track.title || 'Sem título'), element('span', 'song-duration', duration(track.duration)));
-      if (safeURL(track.preview)) row.append(playButton({ ...track, artist: track.artist || album.artist }));
       list.append(row);
     });
     content.replaceChildren(header, element('h3', '', 'Faixas do álbum'), list);
@@ -208,10 +177,6 @@ $('#search-form').addEventListener('submit', (event) => {
   const term = $('#query').value.trim();
   if (term) loadCatalog(term);
 });
-document.querySelectorAll('[data-query]').forEach((button) => button.addEventListener('click', () => {
-  $('#query').value = button.dataset.query;
-  loadCatalog(button.dataset.query);
-}));
 $('#show-chart').addEventListener('click', () => {
   $('#query').value = '';
   loadCatalog();
@@ -220,15 +185,5 @@ $('#close-dialog').addEventListener('click', () => $('#album-dialog').close());
 $('#album-dialog').addEventListener('close', () => {
   albumVersion++;
   previousFocus?.focus();
-});
-$('#close-player').addEventListener('click', () => {
-  $('#audio').pause();
-  $('#audio').removeAttribute('src');
-  $('#audio').load();
-  $('#player').hidden = true;
-  document.body.classList.remove('player-open');
-});
-$('#audio').addEventListener('error', () => {
-  if (!$('#player').hidden) $('#audio-error').textContent = 'Esta prévia não está disponível no momento. Experimente outra música.';
 });
 loadCatalog();
