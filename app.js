@@ -84,21 +84,21 @@ function playPreview(track) {
   });
 }
 function playButton(track) {
-  const button = element('button', 'play-button', '▶');
+  const button = element('button', 'btn play-button', '▶');
   button.type = 'button';
   button.setAttribute('aria-label', `Ouvir prévia de ${track.title || 'faixa'}`);
   button.addEventListener('click', () => playPreview(track));
   return button;
 }
 function trackCard(track, index) {
-  const card = element('article', 'track-card');
+  const card = element('article', 'track-card col');
   const cover = element('button', 'cover-button');
   cover.type = 'button';
   cover.setAttribute('aria-label', `Ver álbum ${track.album?.title || 'da faixa'}`);
   cover.append(image(track.album?.cover_medium, `Capa de ${track.album?.title || 'álbum'}`), element('span', 'cover-label', 'Explorar álbum ↗'));
   cover.disabled = !track.album?.id;
   cover.addEventListener('click', () => openAlbum(track.album.id));
-  const heading = element('div', 'track-heading');
+  const heading = element('div', 'track-heading d-flex align-items-start gap-2');
   heading.append(element('span', 'rank', String(index + 1).padStart(2, '0')));
   const text = element('div', 'track-text');
   const title = element('h3', '', track.title || 'Sem título');
@@ -111,7 +111,7 @@ function trackCard(track, index) {
   return card;
 }
 function retryButton(action) {
-  const button = element('button', 'secondary', 'Tentar novamente');
+  const button = element('button', 'btn btn-outline-secondary secondary', 'Tentar novamente');
   button.type = 'button';
   button.addEventListener('click', action);
   return button;
@@ -121,9 +121,9 @@ async function loadCatalog(term = '', append = false) {
   const offset = append ? nextIndex : 0;
   if (!append) {
     grid.replaceChildren();
-    $('#catalog-title').textContent = term ? `Resultados para “${term}”` : 'Em alta agora';
+    $('#catalog-title').textContent = term ? `Resultados para “${term}”` : 'Em alta na Deezer';
     $('#section-kicker').textContent = term ? 'SUA BUSCA' : 'NO RADAR';
-    $('#catalog-description').textContent = term ? 'Encontre um som e explore o álbum para continuar a descoberta.' : 'Uma seleção do ranking da Deezer para dar o play no seu dia.';
+    $('#catalog-description').textContent = term ? 'Encontre um som e explore o álbum para continuar a descoberta.' : 'Ranking geral da Deezer, sem filtro de país ou gênero.';
     $('#show-chart').hidden = !term;
   }
   actions.replaceChildren();
@@ -140,7 +140,7 @@ async function loadCatalog(term = '', append = false) {
     nextIndex = null;
     if (term && result.next && tracks.length) {
       nextIndex = Number(offset) + tracks.length;
-      const more = element('button', 'secondary', 'Carregar mais músicas ↓');
+      const more = element('button', 'btn btn-outline-secondary secondary', 'Carregar mais músicas ↓');
       more.type = 'button';
       more.addEventListener('click', () => loadCatalog(term, true));
       actions.append(more);
@@ -178,7 +178,7 @@ async function openAlbum(id) {
     info.append(element('p', 'eyebrow', 'POR DENTRO DO ÁLBUM'), title, element('p', '', `${album.artist?.name || 'Artista desconhecido'} · ${date}`), element('p', '', `${album.nb_tracks ?? album.tracks?.data?.length ?? 0} faixas · ${duration(album.duration)}`));
     const link = safeURL(album.link);
     if (link) {
-      const external = element('a', 'secondary', 'Abrir na Deezer ↗');
+      const external = element('a', 'btn btn-outline-secondary secondary', 'Abrir na Deezer ↗');
       external.href = link;
       external.target = '_blank';
       external.rel = 'noopener noreferrer';

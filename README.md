@@ -2,21 +2,19 @@
 
 Explorador musical desenvolvido por Victor Luís Rubert Andriolli para Fundamentos ao Desenvolvimento Web — Sistemas de Informação — Unoesc.
 
+**Bootstrap 5.3.8** fornece o grid responsivo, botões, formulários e utilitários. O CSS oficial e a licença MIT estão em `vendor/bootstrap/`, com integridade SHA-512 conferida contra os metadados do npm. O CSS próprio personaliza o tema e a arte do vinil. Não é necessário carregar JavaScript do Bootstrap: o diálogo de álbum é nativo do navegador.
+
 Visual escuro com tema roxo e referências discretas a discos, fitas e grades dos anos 80 e 90.
 
 ## Executar
 
-Não precisa instalar dependências ou configurar chaves. Na pasta do projeto:
+O projeto usa somente HTML, CSS e JavaScript, sem build ou backend. Abra pelo GitHub Pages ou use a extensão **Live Server** do VS Code para desenvolvimento local. Não precisa instalar pacotes nem configurar chaves.
 
-```sh
-python3 -m http.server 8000
-```
-
-Abra a página servida pelo Python no navegador. É necessário acesso à internet para os dados da Deezer, capas, prévias e fontes. Sem as fontes externas, a interface utiliza fontes locais.
+É necessário acesso à internet para a Deezer, capas, prévias e fontes. Bootstrap é servido junto do site e não depende de CDN. Sem as fontes externas, a interface utiliza fontes locais.
 
 ## Integração
 
-- `GET /chart`: ranking geral sem filtros, com repetição de cartões.
+- `GET /chart`: ranking geral sem filtros de país, artista ou gênero, com repetição de cartões. Não há seleção exclusiva de Brasil ou MPB. A Deezer ainda pode variar os dados conforme a região/IP da requisição; este endpoint não garante um ranking mundial idêntico em todos os países.
 - `GET /search?q={termo}`: busca livre filtrada, com paginação.
 - `GET /album/{id}`: detalhes individuais e repetição de faixas.
 
