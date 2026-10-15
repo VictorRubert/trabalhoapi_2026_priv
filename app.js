@@ -116,23 +116,50 @@ function retryButton(action) {
   button.addEventListener('click', action);
   return button;
 }
-async function loadCatalog(term = '', append = false) {
+// A seleção editorial usa buscas por artista, sem classificar o ranking global como MPB.
+const MPB_ARTISTS = ['Djavan', 'Marisa Monte', 'Milton Nascimento', 'Gilberto Gil'];
+async function loadMpbSelection() {
+  const results = await Promise.all(MPB_ARTISTS.map((artist) =>
+    requestDeezer('/search', { q: `artist:"${artist}"`, limit: 5 })
+  ));
+  if (results.some((result) => !Array.isArray(result.data))) {
+    throw new Error('A Deezer retornou um formato inesperado. Tente novamente.');
+  }
+  const tracks = [];
+  const seen = new Set();
+  // Intercala os artistas para apresentar uma seleção variada desde a primeira linha.
+  for (let index = 0; index < 5; index++) {
+    results.forEach((result) => {
+      const track = result.data[index];
+      if (track && !seen.has(track.id)) {
+        tracks.push(track);
+        seen.add(track.id);
+      }
+    });
+  }
+  return { data: tracks };
+}
+async function loadCatalog(term = '', append = false, view = 'mpb') {
   const version = ++catalogVersion;
   const offset = append ? nextIndex : 0;
   if (!append) {
     grid.replaceChildren();
-    $('#catalog-title').textContent = term ? `Resultados para “${term}”` : 'Em alta agora';
-    $('#section-kicker').textContent = term ? 'SUA BUSCA' : 'NO RADAR';
-    $('#catalog-description').textContent = term ? 'Encontre um som e explore o álbum para continuar a descoberta.' : 'Uma seleção do ranking da Deezer para dar o play no seu dia.';
-    $('#show-chart').hidden = !term;
+    $('#catalog-title').textContent = term ? `Resultados para “${term}”` : view === 'mpb' ? 'MPB para descobrir e redescobrir' : 'Em alta na Deezer';
+    $('#section-kicker').textContent = term ? 'SUA BUSCA' : view === 'mpb' ? 'NOSSA SELEÇÃO' : 'RANKING GERAL';
+    $('#catalog-description').textContent = term ? 'A busca é livre: encontre músicas e artistas de qualquer gênero.' : view === 'mpb' ? 'Um encontro com Djavan, Marisa Monte, Milton Nascimento e Gilberto Gil.' : 'Ranking geral da plataforma, com músicas de vários gêneros.';
+    $('#show-mpb').setAttribute('aria-pressed', String(!term && view === 'mpb'));
+    $('#show-global').setAttribute('aria-pressed', String(!term && view === 'chart'));
+    $('#show-chart').hidden = !term && view === 'mpb';
   }
   actions.replaceChildren();
   status.textContent = append ? 'Carregando mais músicas…' : 'Sintonizando a Deezer…';
   grid.setAttribute('aria-busy', 'true');
   try {
-    const result = await requestDeezer(term ? '/search' : '/chart', term ? { q: term, limit: 20, index: offset } : {});
+    const result = term
+      ? await requestDeezer('/search', { q: term, limit: 20, index: offset })
+      : view === 'mpb' ? await loadMpbSelection() : await requestDeezer('/chart');
     if (version !== catalogVersion) return;
-    const tracks = term ? result.data : result.tracks?.data;
+    const tracks = term || view === 'mpb' ? result.data : result.tracks?.data;
     if (!Array.isArray(tracks)) throw new Error('A Deezer retornou um formato inesperado. Tente novamente.');
     const start = grid.children.length;
     grid.append(...tracks.map((track, index) => trackCard(track, start + index)));
@@ -142,13 +169,13 @@ async function loadCatalog(term = '', append = false) {
       nextIndex = Number(offset) + tracks.length;
       const more = element('button', 'secondary', 'Carregar mais músicas ↓');
       more.type = 'button';
-      more.addEventListener('click', () => loadCatalog(term, true));
+      more.addEventListener('click', () => loadCatalog(term, true, view));
       actions.append(more);
     }
   } catch (error) {
     if (version !== catalogVersion) return;
     status.textContent = error.message;
-    actions.append(retryButton(() => loadCatalog(term, append)));
+    actions.append(retryButton(() => loadCatalog(term, append, view)));
   } finally {
     if (version === catalogVersion) grid.setAttribute('aria-busy', 'false');
   }
@@ -215,6 +242,14 @@ document.querySelectorAll('[data-query]').forEach((button) => button.addEventLis
 $('#show-chart').addEventListener('click', () => {
   $('#query').value = '';
   loadCatalog();
+});
+$('#show-mpb').addEventListener('click', () => {
+  $('#query').value = '';
+  loadCatalog();
+});
+$('#show-global').addEventListener('click', () => {
+  $('#query').value = '';
+  loadCatalog('', false, 'chart');
 });
 $('#close-dialog').addEventListener('click', () => $('#album-dialog').close());
 $('#album-dialog').addEventListener('close', () => {

@@ -1,6 +1,6 @@
 # Frequência
 
-Explorador musical desenvolvido por Victor Luís Rubert Andriolli para Fundamentos ao Desenvolvimento Web — Sistemas de Informação — Unoesc.
+Explorador musical com foco editorial em MPB, desenvolvido por Victor Luís Rubert Andriolli para Fundamentos ao Desenvolvimento Web — Sistemas de Informação — Unoesc.
 
 ## Executar
 
@@ -14,8 +14,8 @@ Abra a página servida pelo Python no navegador. É necessário acesso à intern
 
 ## Integração
 
-- `GET /chart`: destaques sem filtros, com repetição de cartões.
-- `GET /search?q={termo}`: busca filtrada, com paginação.
+- `GET /chart`: ranking geral sem filtros, disponível na aba **Ranking geral Deezer**, com repetição de cartões.
+- `GET /search?q={termo}`: busca filtrada, com paginação. Na página inicial, buscas por `artist:"Djavan"`, `artist:"Marisa Monte"`, `artist:"Milton Nascimento"` e `artist:"Gilberto Gil"` compõem a seleção MPB, intercalada e sem IDs de faixas repetidos. A seleção é editorial e não um ranking do gênero; a busca digitada continua livre.
 - `GET /album/{id}`: detalhes individuais e repetição de faixas.
 
 As consultas utilizam `https://api.deezer.com` com `output=jsonp` e callback exclusivo por requisição, pois o teste da API não retornou o cabeçalho necessário para `fetch` entre origens. O carregamento por script depende da confiança na Deezer; os endpoints são fixos e os dados são inseridos com `textContent`, sem interpretar HTML retornado. Há tratamento de erro, timeout, lista vazia e respostas fora de ordem. Prévias dependem da disponibilidade da faixa e podem expirar.
@@ -28,7 +28,7 @@ A disponibilidade do Pages para repositórios privados depende do plano da conta
 
 ## Conferência manual
 
-1. Abrir a página e verificar o ranking.
+1. Abrir a página, verificar a seleção MPB, alternar para o ranking geral e retornar à seleção.
 2. Buscar um artista, carregar mais resultados e voltar aos destaques.
 3. Buscar um termo inexistente e verificar o estado vazio.
 4. Abrir uma capa, conferir informações e faixas, fechar com o botão e com Escape.
