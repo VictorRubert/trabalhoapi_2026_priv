@@ -22,7 +22,21 @@ As consultas utilizam `https://api.deezer.com` com `output=jsonp` e callback exc
 
 ## GitHub Pages
 
-Envie os arquivos para o repositório. Em **Settings → Pages**, configure **Deploy from a branch**, selecione a branch com os arquivos e a pasta **/ (root)**. Os caminhos relativos permitem hospedar em um subdiretório. Caso a disciplina exija a branch `gh-pages`, publique os mesmos arquivos nela e selecione essa branch nas configurações.
+A branch `gh-pages` contém o site estático completo, incluindo `.nojekyll`. No GitHub, abra **Settings → Pages** e configure:
+
+- **Source:** Deploy from a branch
+- **Branch:** gh-pages
+- **Folder:** / (root)
+
+Clique em **Save** e acompanhe o deploy na aba **Actions**. Após a publicação, o endereço esperado é `https://victorrubert.github.io/trabalhoapi_2026_priv/`.
+
+O site não precisa de Node, build ou backend. CSS e JavaScript usam caminhos relativos, e as chamadas públicas à Deezer usam HTTPS/JSONP. Para atualizar a publicação após mudanças na `main`, atualize também a branch `gh-pages`:
+
+```sh
+git push origin HEAD:gh-pages
+```
+
+Execute esse comando a partir do commit que deseja publicar.
 
 A disponibilidade do Pages para repositórios privados depende do plano da conta. Não é necessário disponibilizar credenciais no código.
 
